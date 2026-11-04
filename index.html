@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LoRa Link Monitor - Giám sát truyền dữ liệu</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+</head>
+<body>
+  <div class="radio-background" aria-hidden="true">
+    <div class="radio-orb orb-one"></div>
+    <div class="radio-orb orb-two"></div>
+    <div class="radio-grid"></div>
+  </div>
+
+  <header class="school-header">
+    <div class="school-logo-box">
+      <img src="logo_truong.png" alt="Logo trường" class="school-logo">
+    </div>
+    <div class="school-text-box">
+      <h1 class="school-title">TRƯỜNG ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT THÀNH PHỐ HỒ CHÍ MINH</h1>
+      <h2 class="faculty-title">KHOA ĐIỆN - ĐIỆN TỬ</h2>
+      <h3 class="project-title">LORA LINK MONITOR</h3>
+      <p class="project-subtitle">Giám sát và đánh giá hệ thống truyền dữ liệu không dây sử dụng công nghệ LoRa</p>
+    </div>
+    <div class="school-logo-box">
+      <img src="logo_khoa.jpg" alt="Logo khoa" class="school-logo">
+    </div>
+  </header>
+
+  <nav class="navbar navbar-dark">
+    <div class="container d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <span class="navbar-brand mb-0"><i class="fas fa-tower-broadcast me-2"></i>LoRa Measurement Dashboard</span>
+      <span id="connectionStatus" class="badge bg-secondary rounded-pill px-3 py-2">
+        <i class="fas fa-circle-notch fa-spin me-1"></i>Đang kiểm tra
+      </span>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    <section class="dashboard-hero mb-4" aria-label="Tổng quan hệ thống LoRa">
+      <div class="hero-copy">
+        <span class="hero-eyebrow"><i class="fas fa-satellite-dish me-2"></i>WIRELESS LINK LABORATORY</span>
+        <h2>LoRa Link Quality Dashboard</h2>
+        <p>Theo dõi chất lượng liên kết truyền dữ liệu theo thời gian thực, phục vụ thu thập số liệu và đánh giá thực nghiệm.</p>
+        <div class="hero-tags">
+          <span><i class="fas fa-microchip"></i> ESP32</span>
+          <span><i class="fas fa-tower-broadcast"></i> LoRa</span>
+          <span><i class="fas fa-temperature-half"></i> SHT30</span>
+          <span><i class="fas fa-chart-line"></i> RSSI · SNR · PDR</span>
+        </div>
+      </div>
+      <div class="hero-visual" aria-hidden="true">
+        <div class="radio-core"><i class="fas fa-tower-broadcast"></i></div>
+        <div class="radio-ring ring-1"></div>
+        <div class="radio-ring ring-2"></div>
+        <div class="radio-ring ring-3"></div>
+        <span class="radio-node node-a"></span>
+        <span class="radio-node node-b"></span>
+        <span class="radio-node node-c"></span>
+      </div>
+    </section>
+
+    <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="current-tab" data-bs-toggle="tab" data-bs-target="#current" type="button" role="tab">
+          <i class="fas fa-satellite-dish me-2"></i>Liên kết hiện tại
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">
+          <i class="fas fa-table-list me-2"></i>Dữ liệu đo
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="control-tab" data-bs-toggle="tab" data-bs-target="#control" type="button" role="tab">
+          <i class="fas fa-sliders me-2"></i>Cấu hình LoRa
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="config-tab" data-bs-toggle="tab" data-bs-target="#config" type="button" role="tab">
+          <i class="fas fa-database me-2"></i>Firebase
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content" id="myTabContent">
+      <section class="tab-pane fade show active" id="current" role="tabpanel">
+        <div class="metric-grid mb-4">
+          <article class="metric-card signal-card">
+            <span class="metric-label"><i class="fas fa-signal me-2"></i>RSSI</span>
+            <strong id="currentRssi">-- dBm</strong>
+            <small>Cường độ tín hiệu thu</small>
+          </article>
+          <article class="metric-card snr-card">
+            <span class="metric-label"><i class="fas fa-wave-square me-2"></i>SNR</span>
+            <strong id="currentSnr">-- dB</strong>
+            <small>Tỷ số tín hiệu trên nhiễu</small>
+          </article>
+          <article class="metric-card pdr-card">
+            <span class="metric-label"><i class="fas fa-check-double me-2"></i>PDR</span>
+            <strong id="currentPdr">-- %</strong>
+            <small>Tỷ lệ gói nhận thành công</small>
+          </article>
+          <article class="metric-card loss-card">
+            <span class="metric-label"><i class="fas fa-triangle-exclamation me-2"></i>Packet Loss</span>
+            <strong id="currentPacketLoss">-- %</strong>
+            <small>Tỷ lệ gói bị mất</small>
+          </article>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-header"><i class="fas fa-circle-info me-2"></i>Thông tin gói tin gần nhất</div>
+          <div class="card-body">
+            <div class="row g-3 status-grid">
+              <div class="col-md-3"><span class="status-label">Node ID</span><strong id="currentNodeId">--</strong></div>
+              <div class="col-md-3"><span class="status-label">Sequence</span><strong id="currentSequence">--</strong></div>
+              <div class="col-md-3"><span class="status-label">Khoảng cách</span><strong id="currentDistance">-- m</strong></div>
+              <div class="col-md-3"><span class="status-label">Trạng thái liên kết</span><strong id="currentLinkStatus">--</strong></div>
+              <div class="col-md-3"><span class="status-label">Nhiệt độ</span><strong id="currentTemp">-- °C</strong></div>
+              <div class="col-md-3"><span class="status-label">Độ ẩm</span><strong id="currentHumidity">-- %</strong></div>
+              <div class="col-md-3"><span class="status-label">Gói gửi / nhận</span><strong id="currentPackets">-- / --</strong></div>
+              <div class="col-md-3"><span class="status-label">Cập nhật cuối</span><strong id="currentTimestamp">--</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span><i class="fas fa-microchip me-2"></i>Cấu hình truyền đang ghi nhận</span>
+            <span class="badge text-bg-light" id="currentFrequency">-- MHz</span>
+          </div>
+          <div class="card-body">
+            <div class="row g-3 text-center configuration-strip">
+              <div class="col-6 col-md"><span>SF</span><strong id="currentSf">--</strong></div>
+              <div class="col-6 col-md"><span>BW</span><strong id="currentBw">-- kHz</strong></div>
+              <div class="col-6 col-md"><span>CR</span><strong id="currentCr">--</strong></div>
+              <div class="col-6 col-md"><span>TX Power</span><strong id="currentTxPower">-- dBm</strong></div>
+              <div class="col-6 col-md"><span>Chu kỳ gửi</span><strong id="currentInterval">-- ms</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span><i class="fas fa-chart-line me-2"></i>Biểu đồ chất lượng đường truyền</span>
+            <div class="d-flex align-items-center flex-wrap gap-2">
+              <button class="btn btn-sm btn-outline-primary" onclick="loadCurrentData(3)">3 giờ</button>
+              <button class="btn btn-sm btn-outline-primary" onclick="loadCurrentData(6)">6 giờ</button>
+              <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#customTimeModal">Tùy chỉnh</button>
+              <div class="form-check form-switch ms-md-2 mb-0">
+                <input class="form-check-input" type="checkbox" id="smoothToggle">
+                <label class="form-check-label fw-semibold" for="smoothToggle">Làm mịn</label>
+              </div>
+            </div>
+          </div>
+          <div class="card-body chart-grid">
+            <div class="chart-container"><canvas id="rssiChart"></canvas></div>
+            <div class="chart-container"><canvas id="snrChart"></canvas></div>
+            <div class="chart-container"><canvas id="pdrChart"></canvas></div>
+            <div class="chart-container"><canvas id="lossChart"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-pane fade" id="history" role="tabpanel">
+        <div class="card mb-4">
+          <div class="card-header"><i class="fas fa-filter me-2"></i>Khoảng dữ liệu thực nghiệm</div>
+          <div class="card-body">
+            <form id="historyForm" class="row g-3 align-items-end">
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Từ ngày/giờ</label>
+                <input type="datetime-local" class="form-control" id="startDateTime" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Đến ngày/giờ</label>
+                <input type="datetime-local" class="form-control" id="endDateTime" required>
+              </div>
+              <div class="col-md-4 d-flex gap-2 flex-wrap">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-search me-2"></i>Tra cứu</button>
+                <button type="button" class="btn btn-success" id="exportExcelBtn"><i class="fas fa-file-excel me-2"></i>Xuất Excel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span><i class="fas fa-database me-2"></i>Bảng số liệu truyền nhận</span>
+            <span id="historySummary" class="small text-secondary">Chưa có dữ liệu</span>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive p-3">
+              <table class="table table-bordered table-hover align-middle" id="historyTable">
+                <thead class="table-light">
+                  <tr>
+                    <th data-sort-key="time">Thời gian <i class="fas fa-sort ms-1"></i></th>
+                    <th data-sort-key="nodeId">Node</th>
+                    <th data-sort-key="sequence">Seq</th>
+                    <th data-sort-key="distance">Khoảng cách (m)</th>
+                    <th data-sort-key="rssi">RSSI (dBm) <i class="fas fa-sort ms-1"></i></th>
+                    <th data-sort-key="snr">SNR (dB) <i class="fas fa-sort ms-1"></i></th>
+                    <th data-sort-key="pdr">PDR (%) <i class="fas fa-sort ms-1"></i></th>
+                    <th data-sort-key="packetLoss">Loss (%) <i class="fas fa-sort ms-1"></i></th>
+                    <th>SF</th>
+                    <th>BW</th>
+                    <th>CR</th>
+                    <th>TX</th>
+                  </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                  <tr><td colspan="12" class="text-center py-4 text-muted">Chưa có dữ liệu. Vui lòng tra cứu.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-pane fade" id="control" role="tabpanel">
+        <div class="card">
+          <div class="card-header"><i class="fas fa-radio me-2"></i>Cấu hình thông số truyền LoRa</div>
+          <div class="card-body">
+            <p class="text-secondary">Các giá trị dưới đây được ghi vào <code>control</code> trên Firebase để ESP32 có thể đọc và áp dụng nếu firmware của bạn hỗ trợ cấu hình từ xa.</p>
+            <div class="row g-4">
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Node ID</label>
+                <input type="text" class="form-control" id="nodeIdInput" value="NODE_01">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Tần số (MHz)</label>
+                <input type="number" class="form-control" id="frequencyInput" value="433" min="100" max="1000" step="0.1">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Spreading Factor</label>
+                <select class="form-select" id="sfSelect">
+                  <option value="7">SF7</option><option value="8">SF8</option><option value="9">SF9</option>
+                  <option value="10">SF10</option><option value="11">SF11</option><option value="12">SF12</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Bandwidth (kHz)</label>
+                <select class="form-select" id="bwSelect">
+                  <option value="125">125 kHz</option><option value="250">250 kHz</option><option value="500">500 kHz</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Coding Rate</label>
+                <select class="form-select" id="crSelect">
+                  <option value="4/5">4/5</option><option value="4/6">4/6</option><option value="4/7">4/7</option><option value="4/8">4/8</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">TX Power (dBm)</label>
+                <input type="number" class="form-control" id="txPowerInput" value="17" min="2" max="20" step="1">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Chu kỳ gửi (ms)</label>
+                <input type="number" class="form-control" id="intervalInput" value="5000" min="100" step="100">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Khoảng cách thử nghiệm (m)</label>
+                <input type="number" class="form-control" id="distanceInput" value="0" min="0" step="1">
+              </div>
+              <div class="col-md-4 d-flex align-items-end gap-2">
+                <button class="btn btn-primary" onclick="saveControlSettings()"><i class="fas fa-save me-2"></i>Lưu cấu hình</button>
+                <button class="btn btn-outline-secondary" onclick="loadControlSettings()"><i class="fas fa-rotate me-2"></i>Tải lại</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-pane fade" id="config" role="tabpanel">
+        <div class="card">
+          <div class="card-header"><i class="fas fa-database me-2"></i>Cấu hình Firebase Realtime Database</div>
+          <div class="card-body">
+            <form id="configForm" class="config-form">
+              <div class="mb-4">
+                <label for="firebaseHost" class="form-label fw-bold">Firebase Host (URL)</label>
+                <input type="url" class="form-control" id="firebaseHost" placeholder="https://your-project-default-rtdb.firebaseio.com/" required>
+              </div>
+              <div class="mb-4">
+                <label for="firebaseAuth" class="form-label fw-bold">Auth Secret / Token</label>
+                <input type="password" class="form-control" id="firebaseAuth" placeholder="Để trống nếu Rules cho phép truy cập">
+              </div>
+              <div class="mb-4">
+                <label for="firebasePath" class="form-label fw-bold">Đường dẫn dữ liệu gốc</label>
+                <input type="text" class="form-control" id="firebasePath" placeholder="lora_monitor" value="lora_monitor">
+                <div class="form-text">Web sử dụng ba nhánh: <code>current</code>, <code>history</code> và <code>control</code>.</div>
+              </div>
+              <div class="d-flex gap-2 flex-wrap">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Lưu cấu hình</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="resetToDefaultConfig()"><i class="fas fa-undo me-2"></i>Khôi phục mặc định</button>
+                <button type="button" class="btn btn-outline-primary" onclick="testFirebaseConnection()"><i class="fas fa-plug me-2"></i>Kiểm tra kết nối</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <i class="fas fa-tower-broadcast me-2"></i>Đồ án 2 - Hệ thống truyền dữ liệu không dây sử dụng công nghệ LoRa
+  </footer>
+
+  <div class="modal fade" id="customTimeModal" tabindex="-1" aria-labelledby="customTimeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-bottom-0">
+          <h5 class="modal-title fw-bold" id="customTimeModalLabel"><i class="fas fa-calendar-alt me-2 text-primary"></i>Chọn khoảng thời gian biểu đồ</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-4">
+            <label class="form-label fw-bold">Từ ngày/giờ</label>
+            <input type="datetime-local" class="form-control" id="customStart" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Đến ngày/giờ</label>
+            <input type="datetime-local" class="form-control" id="customEnd" required>
+          </div>
+        </div>
+        <div class="modal-footer border-top-0">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+          <button type="button" class="btn btn-primary" onclick="loadCustomRange()" data-bs-dismiss="modal"><i class="fas fa-eye me-2"></i>Xem dữ liệu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/firebase.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

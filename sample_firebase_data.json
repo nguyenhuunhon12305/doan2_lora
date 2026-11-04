@@ -1,0 +1,56 @@
+{
+  "lora_monitor": {
+    "current": {
+      "nodeId": "NODE_01",
+      "sequence": 128,
+      "temperature": 30.2,
+      "humidity": 68.5,
+      "rssi": -93,
+      "snr": 7.5,
+      "packetsSent": 130,
+      "packetsReceived": 128,
+      "pdr": 98.46,
+      "packetLoss": 1.54,
+      "distance": 500,
+      "sf": 7,
+      "bw": 125,
+      "cr": "4/5",
+      "txPower": 17,
+      "frequency": 433,
+      "interval": 5000,
+      "timestamp": "2026-10-07 10:20:00",
+      "timeMillis": 1791343200000
+    },
+    "history": {
+      "sample_001": {
+        "nodeId": "NODE_01",
+        "sequence": 127,
+        "temperature": 30.1,
+        "humidity": 68.3,
+        "rssi": -91,
+        "snr": 8.2,
+        "packetsSent": 129,
+        "packetsReceived": 127,
+        "distance": 500,
+        "sf": 7,
+        "bw": 125,
+        "cr": "4/5",
+        "txPower": 17,
+        "frequency": 433,
+        "interval": 5000,
+        "timestamp": "2026-10-07 10:19:55",
+        "timeMillis": 1791343195000
+      }
+    },
+    "control": {
+      "nodeId": "NODE_01",
+      "frequency": 433,
+      "sf": 7,
+      "bw": 125,
+      "cr": "4/5",
+      "txPower": 17,
+      "interval": 5000,
+      "distance": 500
+    }
+  }
+}
